@@ -34,8 +34,9 @@ Cart items have unique product IDs.
 | CART_WISE    | {"threshold":200,"discount":15}                               | Cart total = $150                   | $0 (threshold not met)                        |
 | PRODUCT_WISE | {"product_id":1,"discount":20}                                | 2 items of Product 1 at $50 each    | $20                                           |
 | PRODUCT_WISE | {"product_id":2,"discount":10}                                | Product 2 not in cart               | $0                                            |
-| BXGY         | {"buy_products":[{"product_id":1,"quantity":2}],              | Buy 4 Product 1, 2 Product 2        | Eligible repetitions 2 → discount = 2 ×      |
-|              |  "get_products":[{"product_id":2,"quantity":1}],              |                                     | price of Product 2                            |
+| BXGY         | {"buy_products":[{"product_id":1,"quantity":3},         	   | Buy 3 Product 1, 3 Product 2        | Eligible repetitions 2 -> discount = 2 ×      |
+|			   |	{"product_id":2,"quantity":3}],							   |								     |		price of Product 3 						 |
+|              |  "get_products":[{"product_id":3,"quantity":1}],              |                                     |                           					 |
 |              |  "repition_limit":2}                                          |                                     |                                               |
 +--------------+--------------------------------------------------------------+--------------------------------------+-----------------------------------------------+
 
@@ -73,3 +74,253 @@ Entity              DB Entities
 repository          JPA interfaces
 dto                 Response models
 Exception			Exception handling
+
+
+Request and Responses::
+1.Coupon Creation
+Endpoint url::http://localhost:8080/coupons
+Method: POST
+Request(cart wise)::
+{
+    "type": "CART_WISE",
+    "details": {
+        "threshold": 100,
+        "discount": 10
+    }
+}        
+
+Response::
+Coupon created successfully::1
+
+Request(product wise)::
+{
+    "type": "PRODUCT_WISE",
+    "details": {
+        "product_id": 1,
+        "discount": 20
+    }
+}        
+
+Response::
+Coupon created successfully::2
+
+Request(Bxgy)::
+{
+    "type": "BXGY",
+    "details": {
+        "buy_products": [
+            {
+                "product_id": 1,
+                "quantity": 3
+            },
+            {
+                "product_id": 2,
+                "quantity": 3
+            }
+        ],
+        "get_products": [
+            {
+                "product_id": 3,
+                "quantity": 1
+            }
+        ],
+        "repition_limit": 2
+       
+    }
+}
+
+Response::
+Coupon created successfully::3
+
+2.Applicable coupons
+Endpoint url::http://localhost:8080/coupons/applicable-coupons
+Method: POST
+Request ::
+{
+    "cart": {
+        "items": [
+            {
+                "product_id": 1,
+                "quantity": 6,
+                "price": 50
+            },
+            {
+                "product_id": 2,
+                "quantity": 3,
+                "price": 30
+            },
+            {
+                "product_id": 3,
+                "quantity": 2,
+                "price": 25
+            }
+        ]
+    }
+}
+
+Response::
+{
+    "applicable_coupons": [
+        {
+            "coupon_id": 1,
+            "discount": 44.0,
+            "type": "CART_WISE"
+        },
+        {
+            "coupon_id": 2,
+            "discount": 27.0,
+            "type": "PRODUCT_WISE"
+        },
+        {
+            "coupon_id": 3,
+            "discount": 50.0,
+            "type": "BXGY"
+        }
+    ]
+}
+
+3.Apply coupon
+Endpoint url::http://localhost:8080/coupons/apply-coupon/{coupon_id}
+Method: POST
+Request ::
+{
+    "cart": {
+        "items": [
+            {
+                "product_id": 1,
+                "quantity": 6,
+                "price": 50
+            },
+            {
+                "product_id": 2,
+                "quantity": 3,
+                "price": 30
+            },
+            {
+                "product_id": 3,
+                "quantity": 2,
+                "price": 25
+            }
+        ]
+    }
+}
+
+Response::
+{
+    "updated_cart": {
+        "final_total_discount": 50.0,
+        "total_price": 490.0,
+        "items": [
+            {
+                "product_id": 1,
+                "quantity": 6,
+                "total_discount": 0.0,
+                "price": 50.0
+            },
+            {
+                "product_id": 2,
+                "quantity": 3,
+                "total_discount": 0.0,
+                "price": 30.0
+            },
+            {
+                "product_id": 3,
+                "quantity": 4,
+                "total_discount": 50.0,
+                "price": 25.0
+            }
+        ],
+        "final_price": 440.0
+    }
+}
+
+4.Get all coupons
+Endpoint url::http://localhost:8080/coupons
+Method: GET
+
+Response::
+[
+    {
+        "id": 1,
+        "type": "CART_WISE",
+        "details": {
+            "discount": 10,
+            "threshold": 100
+        }
+    },
+    {
+        "id": 3,
+        "type": "BXGY",
+        "details": {
+            "buy_products": [
+                {
+                    "quantity": 3,
+                    "product_id": 1
+                },
+                {
+                    "quantity": 3,
+                    "product_id": 2
+                }
+            ],
+            "get_products": [
+                {
+                    "quantity": 1,
+                    "product_id": 3
+                }
+            ],
+            "repition_limit": 2
+        }
+    },
+    {
+        "id": 2,
+        "type": "PRODUCT_WISE",
+        "details": {
+            "discount": 30,
+            "product_id": 2
+        }
+    }
+]
+
+5.Get coupon by id
+Endpoint url::http://localhost:8080/coupons/1
+Method: GET
+
+Response:
+{
+    "id": 1,
+    "type": "CART_WISE",
+    "details": {
+        "discount": 10,
+        "threshold": 100
+    }
+}
+
+6.Update coupon by id 
+Endpoint url::http://localhost:8080/coupons/2
+Method: PUT
+
+Request::
+{
+    "type": "PRODUCT_WISE",
+    "details": {
+        "product_id": 2,
+        "discount": 20
+    }
+}    
+
+Response::
+{
+    "id": 2,
+    "type": "PRODUCT_WISE",
+    "details": {
+        "product_id": 2,
+        "discount": 20
+    }
+}
+
+7.Delete Coupon by id
+Endpoint url::http://localhost:8080/coupons/3
+Method: DELETE
+
+Response::
+Coupon deleted successfully:3
